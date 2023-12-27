@@ -1,0 +1,9 @@
+name=Elevator Crank
+author=Justin Roberts
+description=An elevator simulator.
+bundleID=com.wiggletonAbbeyGames.ElevatorCrank
+version=1.0
+buildNumber=100
+imagePath=images
+pdxversion=20100
+buildtime=756959405
