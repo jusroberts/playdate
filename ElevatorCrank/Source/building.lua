@@ -21,9 +21,13 @@ function Building:new(numFloors, x, y)
 	self.x = x
 	self.movementLocked = false
 	self.spawnCounter = 0
-	for i = 0, numFloors do
-		local height = self.bottomFloorHeight - (FLOOR_HEIGHT*i)
+	for i = 1, numFloors do -- lua arrays start at 1
+		local height = self.bottomFloorHeight - (FLOOR_HEIGHT*(i-1))
 		self.floors[i] = Floor(i, x, height)
+	end
+	
+	function self:setElevator(elevator)
+		self.elevator = elevator
 	end
 
 	function self:moveFloors(crankChange)
@@ -67,15 +71,15 @@ function Building:new(numFloors, x, y)
 	end
 
 	function self:moveFloorsTo(goal)
-		for i=0, self.numFloors do
-			local offset = FLOOR_HEIGHT * i
-			self.floors[i]:handleMoveTo(self.x, goal - offset)
+		for i, floor in ipairs(self.floors) do
+			local offset = FLOOR_HEIGHT * (i-1)
+			floor:handleMoveTo(self.x, goal - offset)
 		end
 	end
 
 	function self:moveFloorsBy(crankChange)
-		for i=0, self.numFloors do
-			self.floors[i]:handleMoveBy(0, crankChange)
+		for _, floor in ipairs(self.floors) do
+			floor:handleMoveBy(0, crankChange)
 		end
 	end
 
@@ -97,7 +101,7 @@ function Building:new(numFloors, x, y)
 	end
 
 	function self:getCurrentY()
-		return self.floors[0].y
+		return self.floors[1].y
 	end
 
 	function self:update()
@@ -105,10 +109,7 @@ function Building:new(numFloors, x, y)
 		self:moveFloors(crankChange)
 
 		self:spawnRandomNewPassenger()
-		for i, floor in ipairs(self.floors) do
-			if i == 0 then
-				print("handling 0")
-			end
+		for _, floor in ipairs(self.floors) do
 			floor:handleTick()
 		end
 	end
@@ -117,8 +118,13 @@ function Building:new(numFloors, x, y)
 		self.spawnCounter = self.spawnCounter + 1
 		if self.spawnCounter > SPAWN_TIME then
 			self.spawnCounter = 0
-			-- local floorToSpawnAt = math.random(0, numFloors)
-			self.floors[0]:spawnComingPassenger()
+			local floorToSpawnAt = math.random(1, numFloors)
+			self.floors[floorToSpawnAt]:spawnComingPassenger()
+			-- if self.elevator:canAddPassengers() then
+			-- 	self.elevator:addPassenger(1)
+			-- else
+			-- 	self.elevator:removePassengersForFloor(1)
+			-- end
 		end
 	end
 	

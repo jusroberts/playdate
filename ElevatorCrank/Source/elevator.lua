@@ -1,5 +1,6 @@
 local gfx = playdate.graphics
 local MAX_PASSENGERS = 6
+local NUM_FRAMES = 7
 
 class('Elevator').extends(playdate.graphics.sprite)
 
@@ -8,44 +9,55 @@ function Elevator:init(startX, startY)
 
 	self.numPassengers = 0
 	self.passengers = {}
-
-	self:setImage(gfx.image.new("images/elevator"))
+	self.images = playdate.graphics.imagetable.new('images/elevator')
+	self.frame = 1
+	self:setImage(self.images[self.frame])
+	-- self:updateFrame()
 	self:moveTo(startX, startY)
 	self:add()
+end
 
-	function self:canAddPassengers()
-		return table.getn(self.numPassengers) < MAX_PASSENGERS
-	end
+function Elevator:canAddPassengers()
+	return self.numPassengers < MAX_PASSENGERS
+end
 
-	function self:addPassenger(destinationFloor)
-		table.insert(self.passengers, destinationFloor)
-	end
+function Elevator:addPassenger(destinationFloor)
+	table.insert(self.passengers, destinationFloor)
+	self.numPassengers = self.numPassengers + 1
+	self.frame = self.frame + 1
+	self:updateFrame()
+end
 
-	function self:removePassengersForFloor(targetFloor)
-		local tempPassengers = {}
-		local retVal = 0
-		for floor in values(self.passengers) do
-			if floor == targetFloor then
-				retVal = retVal + 1
-			else
-				table.insert(tempPassengers, floor)
-			end
+function Elevator:removePassengersForFloor(targetFloor)
+	local tempPassengers = {}
+	local numRemoved = 0
+	for _, floor in ipairs(self.passengers) do
+		if floor == targetFloor then
+			numRemoved = numRemoved + 1
+			self.frame = self.frame - 1
+		else
+			table.insert(tempPassengers, floor)
 		end
-		self.passengers = tempPassengers
-		return retVal
 	end
+	self:updateFrame()
+	self.passengers = tempPassengers
+	self.numPassengers = self.numPassengers - numRemoved
+	return numRemoved
+end
 
-	function self:hasPassengerForFloor(targetFloor)
-		for floor in values(self.passengers) do
-			if floor == targetFloor then
-				return true
-			end
+function Elevator:hasPassengerForFloor(targetFloor)
+	for floor in values(self.passengers) do
+		if floor == targetFloor then
+			return true
 		end
-		return false
 	end
+	return false
+end
+
+function Elevator:handleTick()
 	
-	function self:handleTick()
-		
-	end
-		
+end
+
+function Elevator:updateFrame()
+	self:setImage(self.images[self.frame])
 end

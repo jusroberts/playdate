@@ -8,4 +8,5 @@ function Passenger:init(x, y)
 	self:setImage(personImage)
 	self:moveTo(x, y)
 	self:add()
+	self.speed = 0.3 + math.random() * (0.7 - 0.3)
 end

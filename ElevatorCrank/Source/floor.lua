@@ -49,28 +49,35 @@ function Floor:init(floorNum, startX, startY)
 
 	function self:spawnComingPassenger()
 		table.insert(self.passengersComing, Passenger(NEW_PASSENGER_X, self.y + PASSENGER_Y_OFFSET))
-		print("Spawning on " .. self.floorNum)
 	end
 
 	function self:handleTick()
-		for _, passenger in ipairs(self.passengersComing) do
-			print(passenger.x .. " " .. passenger.y)
+		local toBeWaitingIndices = {}
+		for i, passenger in ipairs(self.passengersComing) do
 			if passenger.x > ELEVATOR_SPAWN_X then
-				passenger:moveBy(-0.5, 0)
+				passenger:moveBy(-passenger.speed, 0)
+			else
+				table.insert(toBeWaitingIndices, i)
 			end
 		end
-		local toBeFreed = {}
+		if #toBeWaitingIndices > 0 then
+			self.passengersComing = getArrayWithoutIndices(toBeWaitingIndices, self.passengersComing)
+		end
+		
+		local toBeFreedIndices = {}
 		for i, passenger in ipairs(self.passengersLeaving) do
-			passenger:moveBy(0.5, 0)
+			passenger:moveBy(passenger.speed, 0)
 			if passenger.x > NEW_PASSENGER_X then 
 				table.insert(toBeFreed, i)
 			end
 		end
-		if #toBeFreed > 0 then
+		if #toBeFreedIndices > 0 then
 			local tempPassengersLeaving = {}
 			for i, passenger in ipairs(self.passengersLeaving) do
-				if not containsValue(toBeFreed, i) then
+				if not containsValue(toBeFreedIndices, i) then
 					table.insert(tempPassengersLeaving, passenger)
+				else
+					passenger:remove()
 				end
 			end
 			self.passengersLeaving = tempPassengersLeaving
@@ -85,4 +92,14 @@ function containsValue(array, value)
 		end
 	end
 	return false
+end
+
+function getArrayWithoutIndices(indexArray, oldArray)
+	local tempArray = {}
+	for i, value in ipairs(oldArray) do
+		if not containsValue(indexArray, i) then
+			table.insert(tempArray, value)
+		end
+	end
+	return tempArray
 end
