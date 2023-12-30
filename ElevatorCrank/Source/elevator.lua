@@ -15,10 +15,16 @@ function Elevator:init(startX, startY)
 	-- self:updateFrame()
 	self:moveTo(startX, startY)
 	self:add()
+
+	local elevatorStoppedImage = gfx.image.new("images/elevatorStopped")
+	self.elevatorStoppedSprite = playdate.graphics.sprite.new()
+	self.elevatorStoppedSprite:setImage(elevatorStoppedImage)
+	self.elevatorStoppedSprite:moveTo(startX, startY)
+	self.elevatorStoppedSprite:add()
 end
 
 function Elevator:canAddPassengers()
-	return self.numPassengers < MAX_PASSENGERS
+	return #self.passengers < MAX_PASSENGERS
 end
 
 function Elevator:addPassenger(destinationFloor)
@@ -54,10 +60,22 @@ function Elevator:hasPassengerForFloor(targetFloor)
 	return false
 end
 
+function Elevator:getDestinationFloors()
+	return self.passengers
+end
+
 function Elevator:handleTick()
 	
 end
 
 function Elevator:updateFrame()
 	self:setImage(self.images[self.frame])
+end
+
+function Elevator:setStopped()
+	self.elevatorStoppedSprite:setVisible(true)
+end
+
+function Elevator:setMoving()
+	self.elevatorStoppedSprite:setVisible(false)
 end

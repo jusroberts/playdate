@@ -6,20 +6,18 @@ import "floor"
 local gfx = playdate.graphics
 Building = {}
 Building.__index = Building
-local FONT_X = 200
 local FLOOR_HEIGHT = 64
 local SPAWN_TIME = 100
 math.randomseed(math.randomseed(playdate.getSecondsSinceEpoch()))
 
 function Building:new(numFloors, x, y)
 	local self = setmetatable({}, Building)
-
-	self.font = gfx.font.new('text/Roobert-24-Medium-Numerals');
 	self.numFloors = numFloors
 	self.floors = {}
 	self.bottomFloorHeight = y
 	self.x = x
 	self.movementLocked = false
+	self.stopped = false
 	self.spawnCounter = 0
 	for i = 1, numFloors do -- lua arrays start at 1
 		local height = self.bottomFloorHeight - (FLOOR_HEIGHT*(i-1))
@@ -29,8 +27,14 @@ function Building:new(numFloors, x, y)
 	function self:setElevator(elevator)
 		self.elevator = elevator
 	end
+	
+	function self:setElevatorPanel(elevatorPanel)
+		self.elevatorPanel = elevatorPanel
+	end
 
 	function self:moveFloors(crankChange)
+		self.stopped = false
+		local startY = self:getCurrentY()
 		if not self.movementLocked then
 			if math.abs(crankChange) < 0.5 then
 				self:automatedSnapping()
@@ -38,12 +42,15 @@ function Building:new(numFloors, x, y)
 				self:handleManualMovement(crankChange)
 			end
 		end
+		if (startY == self:getCurrentY()) then
+			self.stopped = true
+		end
 	end
 
 	function self:handleManualMovement(crankChange)
 		local newY = self:getCurrentY() + crankChange
 		local minY = self.bottomFloorHeight
-		local maxY = minY + self.numFloors * FLOOR_HEIGHT
+		local maxY = minY + (self.numFloors-1) * FLOOR_HEIGHT
 		if newY < minY then
 			self:moveFloorsTo(minY)
 		elseif (newY > maxY) then
@@ -88,16 +95,16 @@ function Building:new(numFloors, x, y)
 	end
 
 	function self:getDesiredY()
-		return (self:getCurrentFloor() * FLOOR_HEIGHT) + self.bottomFloorHeight
+		return ((self:getCurrentFloor() - 1) * FLOOR_HEIGHT) + self.bottomFloorHeight
 	end
 
 	function self:getCurrentFloor()
 		local y = self:getCurrentY() - self.bottomFloorHeight
 		if y < 0 then
 			print("low error")
-			return 0
+			return 1
 		end
-		return round(y / FLOOR_HEIGHT)
+		return round(y / FLOOR_HEIGHT) + 1
 	end
 
 	function self:getCurrentY()
@@ -109,8 +116,20 @@ function Building:new(numFloors, x, y)
 		self:moveFloors(crankChange)
 
 		self:spawnRandomNewPassenger()
-		for _, floor in ipairs(self.floors) do
+		for i, floor in ipairs(self.floors) do
 			floor:handleTick()
+			self.elevatorPanel:markFloorAsRequested(i, floor:hasWaitingPassengers())
+		end
+		self.elevatorPanel:setDropoffFloors(self.elevator:getDestinationFloors())
+		
+		if (playdate.buttonJustPressed("B")) then
+			self:handleBPressed()
+		end
+		
+		if self.stopped then
+			self.elevator:setStopped()
+		else
+			self.elevator:setMoving()
 		end
 	end
 
@@ -118,14 +137,51 @@ function Building:new(numFloors, x, y)
 		self.spawnCounter = self.spawnCounter + 1
 		if self.spawnCounter > SPAWN_TIME then
 			self.spawnCounter = 0
-			local floorToSpawnAt = math.random(1, numFloors)
-			self.floors[floorToSpawnAt]:spawnComingPassenger()
-			-- if self.elevator:canAddPassengers() then
-			-- 	self.elevator:addPassenger(1)
-			-- else
-			-- 	self.elevator:removePassengersForFloor(1)
-			-- end
+			local floorToSpawnAt = 1
+			local destinationFloor = 1
+			if math.random(1,2) == 2 then
+				floorToSpawnAt = math.random(1, numFloors)
+			end
+			if (floorToSpawnAt == 1) then
+				destinationFloor = math.random(2, numFloors)
+			end
+			self.floors[floorToSpawnAt]:spawnComingPassenger(destinationFloor)
 		end
+	end
+
+	function self:movePassengersFromFloorToElevator()
+		if not self.stopped then
+			return false
+		end
+		local floorNum = self:getCurrentFloor()
+		local floor = self.floors[floorNum]
+
+		while (elevator:canAddPassengers() and floor:hasWaitingPassengers()) do
+			local passenger = floor:takeWaitingPassenger()
+			if passenger ~= nil then
+				elevator:addPassenger(passenger.destinationFloor)
+				passenger:remove()
+			else
+				break
+			end
+		end
+	end
+	
+	function self:movePassengersFromElevatorToFloor()
+		if not self.stopped then
+			return false
+		end
+		local floorNum = self:getCurrentFloor()
+		local floor = self.floors[floorNum]
+		local numPassengers = elevator:removePassengersForFloor(floorNum)
+		for _ = 1, numPassengers do
+			floor:spawnLeavingPassenger()
+		end
+	end
+	
+	function self:handleBPressed()
+		self:movePassengersFromFloorToElevator()
+		self:movePassengersFromElevatorToFloor()
 	end
 	
 	return self
