@@ -1,5 +1,6 @@
 -- import "CoreLibs/graphics"
 import "CoreLibs/sprites"
+import "CoreLibs/crank"
 import "floor_number"
 import "floor"
 
@@ -10,7 +11,7 @@ local FLOOR_HEIGHT = 64
 local SPAWN_TIME = 100
 math.randomseed(math.randomseed(playdate.getSecondsSinceEpoch()))
 
-function Building:new(numFloors, x, y)
+function Building:new(numFloors, x, y, crankPosition)
 	local self = setmetatable({}, Building)
 	self.numFloors = numFloors
 	self.floors = {}
@@ -19,6 +20,7 @@ function Building:new(numFloors, x, y)
 	self.movementLocked = false
 	self.stopped = false
 	self.spawnCounter = 0
+	self.crankPosition = crankPosition
 	for i = 1, numFloors do -- lua arrays start at 1
 		local height = self.bottomFloorHeight - (FLOOR_HEIGHT*(i-1))
 		self.floors[i] = Floor(i, x, height)
@@ -32,23 +34,24 @@ function Building:new(numFloors, x, y)
 		self.elevatorPanel = elevatorPanel
 	end
 
-	function self:moveFloors(crankChange)
+	function self:moveFloors(crankTicks)
+		-- print(crankTicks)
 		self.stopped = false
 		local startY = self:getCurrentY()
-		if not self.movementLocked then
-			if math.abs(crankChange) < 0.5 then
-				self:automatedSnapping()
-			else
-				self:handleManualMovement(crankChange)
-			end
-		end
-		if (startY == self:getCurrentY()) then
-			self.stopped = true
-		end
+		self:handleManualMovement(crankTicks)
+		-- if not self.movementLocked then
+		-- 	if math.abs(crankChange) > 0.3 then
+		-- 	-- 	self:automatedSnapping()
+		-- 	-- else
+		-- 		self:handleManualMovement(crankChange)
+		-- 	end
+		-- end
+		self.stopped = self:atFloor() and startY == self:getCurrentY()
 	end
 
 	function self:handleManualMovement(crankChange)
-		local newY = self:getCurrentY() + crankChange
+		local speed = 32
+		local newY = self:getCurrentY() + speed * crankChange
 		local minY = self.bottomFloorHeight
 		local maxY = minY + (self.numFloors-1) * FLOOR_HEIGHT
 		if newY < minY then
@@ -56,7 +59,7 @@ function Building:new(numFloors, x, y)
 		elseif (newY > maxY) then
 			self:moveFloorsTo(maxY)
 		else
-			self:moveFloorsBy(crankChange)
+			self:moveFloorsBy(speed * crankChange)
 		end
 	end
 
@@ -112,8 +115,8 @@ function Building:new(numFloors, x, y)
 	end
 
 	function self:update()
-		local crankChange = playdate.getCrankChange() / 10.0
-		self:moveFloors(crankChange)
+		local crankTicks = playdate.getCrankTicks(360/90)
+		self:moveFloors(crankTicks)
 
 		self:spawnRandomNewPassenger()
 		for i, floor in ipairs(self.floors) do
@@ -139,7 +142,8 @@ function Building:new(numFloors, x, y)
 			self.spawnCounter = 0
 			local floorToSpawnAt = 1
 			local destinationFloor = 1
-			if math.random(1,2) == 2 then
+			-- prefer spawning at the first floor for now
+			if math.random(1, 2) == 2 then
 				floorToSpawnAt = math.random(1, numFloors)
 			end
 			if (floorToSpawnAt == 1) then
