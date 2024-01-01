@@ -37,6 +37,11 @@ function PanelButton:hide()
 	self:setVisible(false)
 end
 
+function PanelButton:setPos(x, y)
+	self:moveTo(x, y)
+	self.circle:moveTo(x, y-BUTTON_RADIUS + 4)
+end
+
 function PanelButton:draw(x, y, width, height)
 	gfx.setImageDrawMode(playdate.graphics.kDrawModeFillWhite)
 	gfx.setFont(self.font)

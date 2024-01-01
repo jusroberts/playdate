@@ -5,11 +5,11 @@ local gfx = playdate.graphics
 class('ElevatorPanel').extends(playdate.graphics.sprite)
 
 local BUTTONS_PER_ROW = 5
-local ROW_HEIGHT = 32
+local ROW_HEIGHT = 30
 local COLUMN_WIDTH = 32
 local SCREEN_HEIGHT = 240
 local X_OFFSET = 16
-local Y_OFFSET = 16
+local Y_OFFSET = 10
 
 function ElevatorPanel:init(numFloors)
 	ElevatorPanel.super.init(self)
@@ -28,7 +28,7 @@ function ElevatorPanel:init(numFloors)
 		gfx.drawText("Pickups", 0, 0)
 	gfx.popContext()
 	self.pickupsText = gfx.sprite.new(pickupsImage)
-	local y = self:getPickupY(numFloors) - ROW_HEIGHT
+	local y = self:getPickupY(numFloors) - 36
 	self.pickupsText:moveTo(X_OFFSET + 50, y)
 	self.pickupsText:add()
 
@@ -51,13 +51,11 @@ function ElevatorPanel:getPickupY(floorNum)
 end
 
 function ElevatorPanel:getDropoffX(floorNum)
-	-- return X_OFFSET + (COLUMN_WIDTH * ((index - 1) % BUTTONS_PER_ROW))
 	return self:getPickupX(floorNum)
 end
 
 function ElevatorPanel:getDropoffY(floorNum)
-	-- return 32 + ((index - 1) / 6) * ROW_HEIGHT
-	return self:getPickupY(floorNum) - 120
+	return self:getPickupY(floorNum) - 116
 end
 
 function ElevatorPanel:markFloorAsRequested(floorNum, isRequested)
@@ -72,7 +70,7 @@ function ElevatorPanel:setDropoffFloors(dropoffFloorNums)
 	for i, button in ipairs(self.dropoffButtons) do
 		if containsValue(dropoffFloorNums, i) then
 			button:show()
-		else 
+		else
 			button:hide()
 		end
 	end

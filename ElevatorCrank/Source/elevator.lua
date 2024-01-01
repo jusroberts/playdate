@@ -1,3 +1,5 @@
+import "passenger"
+
 local gfx = playdate.graphics
 local MAX_PASSENGERS = 6
 local NUM_FRAMES = 7
@@ -7,7 +9,6 @@ class('Elevator').extends(playdate.graphics.sprite)
 function Elevator:init(startX, startY)
 	Elevator.super.init(self)
 
-	self.numPassengers = 0
 	self.passengers = {}
 	self.images = playdate.graphics.imagetable.new('images/elevator')
 	self.frame = 1
@@ -27,41 +28,45 @@ function Elevator:canAddPassengers()
 	return #self.passengers < MAX_PASSENGERS
 end
 
-function Elevator:addPassenger(destinationFloor)
-	table.insert(self.passengers, destinationFloor)
-	self.numPassengers = self.numPassengers + 1
+function Elevator:addPassenger(passenger)
+	table.insert(self.passengers, passenger)
 	self.frame = self.frame + 1
 	self:updateFrame()
 end
 
 function Elevator:removePassengersForFloor(targetFloor)
 	local tempPassengers = {}
+	local removedPassengers = {}
 	local numRemoved = 0
-	for _, floor in ipairs(self.passengers) do
-		if floor == targetFloor then
+	for _, passenger in ipairs(self.passengers) do
+		if passenger.destinationFloor == targetFloor then
+			table.insert(removedPassengers, passenger)
 			numRemoved = numRemoved + 1
 			self.frame = self.frame - 1
 		else
-			table.insert(tempPassengers, floor)
+			table.insert(tempPassengers, passenger)
 		end
 	end
 	self:updateFrame()
 	self.passengers = tempPassengers
-	self.numPassengers = self.numPassengers - numRemoved
-	return numRemoved
+	return removedPassengers
 end
 
-function Elevator:hasPassengerForFloor(targetFloor)
-	for floor in values(self.passengers) do
-		if floor == targetFloor then
-			return true
-		end
-	end
-	return false
-end
+-- function Elevator:hasPassengerForFloor(targetFloor)
+-- 	for _, passenger in ipairs(self.passengers) do
+-- 		if passenger.destinationFloor == targetFloor then
+-- 			return true
+-- 		end
+-- 	end
+-- 	return false
+-- end
 
 function Elevator:getDestinationFloors()
-	return self.passengers
+	local floors = {}
+	for _, passenger in ipairs(self.passengers) do 
+		table.insert(floors, passenger.destinationFloor)
+	end
+	return floors
 end
 
 function Elevator:handleTick()
