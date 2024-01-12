@@ -1,0 +1,7 @@
+name=Planetary Defense, Incorporated
+author=Justin Roberts
+description=A planetary defense simulator
+bundleID=com.wiggletonAbbeyGames.PlanetaryDefenseInc
+version=1.0
+buildNumber=100
+imagePath=assets
