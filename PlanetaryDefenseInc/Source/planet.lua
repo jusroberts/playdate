@@ -2,6 +2,7 @@ import("CoreLibs/object")
 import("CoreLibs/graphics")
 import("CoreLibs/sprites")
 import("turret")
+import("eye")
 
 local gfx = playdate.graphics
 
@@ -29,6 +30,11 @@ function Planet:init()
 		
 	}
 	
+	self.eyes = {
+		Eye(360 - 60, 0),
+		Eye(360 - 120, 0)
+	}
+	
 end
 
 function Planet:update()
@@ -36,6 +42,9 @@ function Planet:update()
 		self:setRotation(self:getRotation() + playdate.getCrankChange())
 		for _, turret in ipairs(self.turrets) do
 			turret:updatePosition(self:getRotation())
+		end
+		for _, eye in ipairs(self.eyes) do
+			eye:updatePosition(self:getRotation())
 		end
 	end
 		 
